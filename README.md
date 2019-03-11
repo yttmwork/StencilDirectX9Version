@@ -1,0 +1,2 @@
+# StencilDirectX9Version
+ステンシル処理をDirectX9を使って実装する
