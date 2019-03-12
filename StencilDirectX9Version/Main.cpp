@@ -16,8 +16,13 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		return 0;
 	}
 
-	bool is_game_end = false;
+	if (LoadingTexture("Res/Sample01.png") == false)
+	{
+		ReleaseDirectX();
+		return 0;
+	}
 
+	bool is_game_end = false;
 	while (is_game_end == false)
 	{
 		MSG msg;
@@ -38,10 +43,13 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		{
 			StartRendering();
 
+			RenderingTexture("Res/Sample01.png", 0, 0);
+
 			FinishRendering();
 		}
 	}
 
+	ReleaseAllTexture();
 	ReleaseDirectX();
 
 	return 0;

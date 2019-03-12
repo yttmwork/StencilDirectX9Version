@@ -1,14 +1,145 @@
-﻿#include "DirectX.h"
+﻿#include <map>
+#include "DirectX.h"
+
+typedef struct
+{
+	LPDIRECT3DTEXTURE9 m_pTexture;	// テクスチャデータ
+	int m_Width;					// 横幅
+	int m_Height;					// 縦幅
+} TEXTURE_DATA;
+
+typedef struct
+{
+	D3DXVECTOR4 m_Pos;			// 座標(w込み)
+	DWORD m_Color;				// 色
+	D3DXVECTOR2 m_TextureUV;	// tutv
+} CUSTOM_VERTEX;
+
+const DWORD RenderingFVF = (D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 
 extern const char* g_WindowClassName;
 
-static LPDIRECT3D9	g_pD3DInterface;	// DirectXインターフェース
-static LPDIRECT3DDEVICE9 g_pD3DDevice;
+static LPDIRECT3D9	g_pD3DInterface;					// DirectXインターフェース
+static LPDIRECT3DDEVICE9 g_pD3DDevice;					// DirectXDevice
+std::map<const char*, TEXTURE_DATA*> g_TextureList;		// テクスチャ格納用配列
+
+bool LoadingTexture(const char* file_name)
+{
+	if (g_TextureList.count(file_name) == 1)
+	{
+		return true;
+	}
+
+	g_TextureList[file_name] = new TEXTURE_DATA();
+
+	D3DXIMAGE_INFO info;
+	// 2の階乗じゃないので元のサイズを取得してD3DXCreateTextureFromFileExで使う
+	D3DXGetImageInfoFromFile(file_name, &info);
+	
+	if (FAILED( D3DXCreateTextureFromFileEx(g_pD3DDevice,
+										file_name,
+										info.Width,
+										info.Height,
+										1,
+										0,
+										D3DFMT_UNKNOWN,
+										D3DPOOL_MANAGED,
+										D3DX_DEFAULT,
+										D3DX_DEFAULT,
+										0x0000ff00,
+										nullptr,
+										nullptr,
+										&g_TextureList[file_name]->m_pTexture)))
+	{
+		return false;
+	} 
+	else
+	{
+		// テクスチャサイズの取得
+		D3DSURFACE_DESC desc;
+
+		if( FAILED( g_TextureList[file_name]->m_pTexture->GetLevelDesc( 0, &desc ) ))
+		{
+			g_TextureList[file_name]->m_pTexture->Release();
+			g_TextureList[file_name]->m_pTexture = nullptr;
+			return false;
+		}
+		g_TextureList[file_name]->m_Width = desc.Width;
+		g_TextureList[file_name]->m_Height = desc.Height;
+	}
+
+	return true;
+}
+
+void ReleaseTexture(const char* file_name)
+{
+	if (g_TextureList.count(file_name) == 0)
+	{
+		return;
+	}
+
+	if (g_TextureList[file_name]->m_pTexture != NULL)
+	{
+		g_TextureList[file_name]->m_pTexture->Release();
+		TEXTURE_DATA *data = g_TextureList[file_name];
+		g_TextureList.erase(file_name);
+		delete(data);
+	}
+}
+
+void ReleaseAllTexture()
+{
+	for (auto itr = g_TextureList.begin(); itr != g_TextureList.end(); itr++)
+	{
+		if (g_TextureList[itr->first] == nullptr)
+		{
+			continue;
+		}
+		g_TextureList[itr->first]->m_pTexture->Release();
+		delete(g_TextureList[itr->first]);
+	}
+	g_TextureList.clear();
+}
+
+void RenderingTexture(const char* file_name, float x, float y)
+{
+	const TEXTURE_DATA* texture_data = g_TextureList[file_name];
+
+	float left_tu = 0.0f;
+	float right_tu = 1.0f;
+	float top_tv = 0.0f;
+	float bottom_tv = 0.0f;
+
+	if (texture_data == nullptr ||
+		texture_data->m_pTexture == nullptr)
+	{
+		return;
+	}
+
+	DWORD color = D3DCOLOR_ARGB(255, 255, 255, 255);
+
+	// 三角形を描画 start
+	CUSTOM_VERTEX v[4] = 
+	{
+		{ D3DXVECTOR4(x, y, 0.0f, 1.0f), color, D3DXVECTOR2(0.0f, 0.0f) },
+		{ D3DXVECTOR4(x + texture_data->m_Width, y, 0.0f, 1.0f), color, D3DXVECTOR2(1.0f, 0.0f) },
+		{ D3DXVECTOR4(x + texture_data->m_Width, y + texture_data->m_Height, 0.0f, 1.0f), color, D3DXVECTOR2(1.0f, 1.0f) },
+		{ D3DXVECTOR4(x, y + texture_data->m_Height, 0.0f, 1.0f), color, D3DXVECTOR2(0.0f, 1.0f) },
+	};
+
+	// 頂点構造の指定
+	g_pD3DDevice->SetFVF(RenderingFVF);
+
+	g_pD3DDevice->SetTexture(0, texture_data->m_pTexture);
+
+	g_pD3DDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, v, sizeof(CUSTOM_VERTEX));
+}
 
 void StartRendering()
 {
-	g_pD3DDevice->Clear(0L,
-		NULL,
+	g_pD3DDevice->Clear(
+		0,
+		nullptr,
 		D3DCLEAR_TARGET,			// 初期化するバッファの種類
 		D3DCOLOR_ARGB(255, 0, 0, 0),// フレームバッファの初期化色
 		1.0f,						// Zバッファの初期値
@@ -25,7 +156,7 @@ void FinishRendering()
 {
 	g_pD3DDevice->EndScene();
 
-	g_pD3DDevice->Present(NULL, NULL, NULL, NULL);
+	g_pD3DDevice->Present(nullptr, nullptr, nullptr, nullptr);
 }
 
 void ReleaseDirectX()
@@ -47,7 +178,7 @@ bool CreateInterface()
 {
 	// インターフェース作成
 	g_pD3DInterface = Direct3DCreate9(D3D_SDK_VERSION);
-	if (g_pD3DInterface == NULL)
+	if (g_pD3DInterface == nullptr)
 	{
 		// 作成失敗
 		return false;
