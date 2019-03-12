@@ -2,6 +2,7 @@
 #define DIRECT_X_H_
 
 #include <d3d9.h>
+#include <d3dx9.h>
 
 /**
 * @brief DirectX初期化関数
@@ -31,4 +32,36 @@ void FinishRendering();
 */
 void ReleaseDirectX();
 
+/**
+* @brief テクスチャ読み込み関数
+* 指定されたファイル名のテクスチャを読み込む
+* @return 読み込みの成否 成功(true)
+* @param[in] file_name 読み込むファイル名(パス付き)
+*/
+bool LoadingTexture(const char* file_name);
+
+
+/**
+* @brief テクスチャ解放関数
+* 指定されたファイル名のテクスチャを解放する
+* @param[in] file_name 解放するテクスチャのファイル名(パス付き)
+*/
+void ReleaseTexture(const char* file_name);
+
+/**
+* @brief 全テクスチャ解放関数
+* 全てのテクスチャを解放する
+*/
+void ReleaseAllTexture();
+
+/**
+* @brief テクスチャ描画
+* 指定した座標にテクスチャを描画する
+* @param[in] file_name 描画対象テクスチャ
+* @param[in] x 描画位置(X)
+* @param[in] y 描画位置(Y)
+*/
+void RenderingTexture(const char* file_name, float x, float y);
+
 #endif
+
