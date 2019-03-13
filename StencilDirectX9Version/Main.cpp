@@ -1,6 +1,12 @@
 ﻿#include "Window.h"
 #include "DirectX.h"
 
+void FinishApp()
+{
+	ReleaseAllTexture();
+	ReleaseDirectX();
+}
+
 int WINAPI WinMain(HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
 	LPSTR     lpCmpLine,
@@ -18,7 +24,13 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	if (LoadingTexture("Res/Sample01.png") == false)
 	{
-		ReleaseDirectX();
+		FinishApp();
+		return 0;
+	}
+
+	if (LoadingTexture("Res/StencilMask.png") == false)
+	{
+		FinishApp();
 		return 0;
 	}
 
@@ -43,14 +55,14 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		{
 			StartRendering();
 
-			RenderingTexture("Res/Sample01.png", 0, 0);
+			RenderingStencilMask("Res/StencilMask.png", 0, 0);
+			RenderingTexture("Res/Sample01.png", 0, 0, 0.1f);
 
 			FinishRendering();
 		}
 	}
 
-	ReleaseAllTexture();
-	ReleaseDirectX();
+	FinishApp();
 
 	return 0;
 }
