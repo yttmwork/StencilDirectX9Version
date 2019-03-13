@@ -57,11 +57,30 @@ void ReleaseAllTexture();
 /**
 * @brief テクスチャ描画
 * 指定した座標にテクスチャを描画する
-* @param[in] file_name 描画対象テクスチャ
+* @param[in] file_name 描画対象テクスチャのテクスチャの名前
 * @param[in] x 描画位置(X)
 * @param[in] y 描画位置(Y)
 */
-void RenderingTexture(const char* file_name, float x, float y);
+void RenderingTexture(const char* file_name, float x, float y, float z);
+
+/**
+* @brief ステンシルマスクの描画
+* ステンシルマスク用の画像を描画する
+* @param[in] file_name 描画対象のテクスチャの名前
+* @param[in] x 描画位置(X)
+* @param[in] y 描画位置(Y)
+*/
+void RenderingStencilMask(const char* file_name, float x, float y);
+
+/**
+* @brief ステンシルマスク用のRenderStateの設定関数
+*/
+void SetUpStencilMaskRenderState();
+
+/*
+* @brief ステンシル用のRenderStateの設定関数
+*/
+void SetUpStencilRenderState();
 
 #endif
 
