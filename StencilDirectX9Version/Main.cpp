@@ -1,5 +1,9 @@
 ﻿#include "Window.h"
 #include "DirectX.h"
+#include "Game.h"
+#include <vector>
+
+#define PRACTICE01
 
 void FinishApp()
 {
@@ -7,12 +11,51 @@ void FinishApp()
 	ReleaseDirectX();
 }
 
+void Practice01()
+{
+	StartRendering();
+	SetUpStencilMaskRenderState(1, D3DCMPFUNC::D3DCMP_ALWAYS);
+	RenderingTexture("Res/StencilMask.png", 0, 0, 0);
+
+	SetUpStencilRenderState(1, D3DCMPFUNC::D3DCMP_EQUAL);
+	RenderingTexture("Res/Sample01.png", 0, 0, 0);
+
+	FinishRendering();
+}
+
+void Practice02()
+{
+	UpdateCharacter();
+
+	StartRendering();
+	
+	RenderingBg();
+	RenderingCharacter();
+	RenderingMapChip();
+	RenderingCharacterShadow();
+	
+	FinishRendering();
+}
+
 int WINAPI WinMain(HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
 	LPSTR     lpCmpLine,
 	INT       nCmdShow)
 {
-	if (InitializeWindow(hInstance, "Stencil", 1280, 720) == false)
+	std::vector<const char*> file_list = 
+	{
+		"Res/Sample01.png",
+		"Res/StencilMask.png",
+		"Res/CharacterRun01.png",
+		"Res/CharacterRun02.png",
+		"Res/CharacterRun03.png",
+		"Res/CharacterRun04.png",
+		"Res/CharacterRun05.png",
+		"Res/MapChip.png",
+		"Res/BackGround.png",
+	};
+
+	if (InitializeWindow(hInstance, "Stencil", 512, 512) == false)
 	{
 		return 0;
 	}
@@ -22,16 +65,13 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		return 0;
 	}
 
-	if (LoadingTexture("Res/Sample01.png") == false)
+	for (auto itr = file_list.begin(); itr != file_list.end(); itr++)
 	{
-		FinishApp();
-		return 0;
-	}
-
-	if (LoadingTexture("Res/StencilMask.png") == false)
-	{
-		FinishApp();
-		return 0;
+		if (LoadingTexture((*itr)) == false)
+		{
+			FinishApp();
+			return 0;
+		}
 	}
 
 	bool is_game_end = false;
@@ -53,12 +93,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		}
 		else 
 		{
-			StartRendering();
-
-			RenderingStencilMask("Res/StencilMask.png", 0, 0);
-			RenderingTexture("Res/Sample01.png", 0, 0, 0.1f);
-
-			FinishRendering();
+#ifdef PRACTICE01
+			Practice01();
+#else
+			Practice02();
+#endif
 		}
 	}
 

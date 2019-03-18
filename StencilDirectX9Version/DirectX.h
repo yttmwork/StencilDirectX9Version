@@ -61,26 +61,17 @@ void ReleaseAllTexture();
 * @param[in] x 描画位置(X)
 * @param[in] y 描画位置(Y)
 */
-void RenderingTexture(const char* file_name, float x, float y, float z);
-
-/**
-* @brief ステンシルマスクの描画
-* ステンシルマスク用の画像を描画する
-* @param[in] file_name 描画対象のテクスチャの名前
-* @param[in] x 描画位置(X)
-* @param[in] y 描画位置(Y)
-*/
-void RenderingStencilMask(const char* file_name, float x, float y);
+void RenderingTexture(const char* file_name, float x, float y, float z, DWORD color = 0xffffffff);
 
 /**
 * @brief ステンシルマスク用のRenderStateの設定関数
 */
-void SetUpStencilMaskRenderState();
+void SetUpStencilMaskRenderState(unsigned char ref, D3DCMPFUNC cmp_func);
 
 /*
 * @brief ステンシル用のRenderStateの設定関数
 */
-void SetUpStencilRenderState();
+void SetUpStencilRenderState(unsigned char ref, D3DCMPFUNC cmp_func);
 
 #endif
 

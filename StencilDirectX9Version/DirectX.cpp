@@ -31,7 +31,7 @@ std::map<const char*, TEXTURE_DATA*> g_TextureList;		// テクスチャ格納用
 * @param[in] z 描画座標(Z)
 * @param[in] texture_data ポリゴンにはるテクスチャデータ
 */
-void RenderingRectPorigon(float x, float y, float z, float width, float height, const TEXTURE_DATA* texture_data);
+void RenderingRectPorigon(float x, float y, float z, float width, float height, const TEXTURE_DATA* texture_data, DWORD color = 0xffffffff);
 
 void StartRendering()
 {
@@ -39,7 +39,7 @@ void StartRendering()
 		0,
 		nullptr,
 		D3DCLEAR_TARGET | D3DCLEAR_STENCIL | D3DCLEAR_ZBUFFER,	// 初期化するバッファの種類
-		D3DCOLOR_ARGB(255, 255, 0, 0),							// フレームバッファの初期化色
+		D3DCOLOR_ARGB(255, 255, 255, 255),							// フレームバッファの初期化色
 		1.0f,													// Zバッファの初期値
 		0);														// ステンシルバッファの初期値
 
@@ -71,7 +71,7 @@ void FinishRendering()
 	g_pD3DDevice->Present(nullptr, nullptr, nullptr, nullptr);
 }
 
-void SetUpStencilRenderState()
+void SetUpStencilRenderState(unsigned char ref, D3DCMPFUNC cmp_func)
 {
 	// Zバッファ設定 => 有効
 	g_pD3DDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
@@ -80,36 +80,32 @@ void SetUpStencilRenderState()
 
 	// ステンシルバッファ => 有効
 	g_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
-
-	// ステンシルバッファと比較する参照値設定 => 0x01
-	g_pD3DDevice->SetRenderState(D3DRS_STENCILREF, 0x01);
-
+	// ステンシルバッファと比較する参照値設定 => ref
+	g_pD3DDevice->SetRenderState(D3DRS_STENCILREF, ref);
 	// ステンシルバッファの値に対してのマスク設定 => 0xff(全て真)
 	g_pD3DDevice->SetRenderState(D3DRS_STENCILMASK, 0xff);
-
 	// ステンシルテストの比較方法設定 => 
 	//		この描画での参照値 >= ステンシルバッファの参照値なら合格
-	g_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL );
-		
+	g_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, cmp_func );
 	// ステンシルテストの結果に対しての反映設定
 	g_pD3DDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
 	g_pD3DDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
 	g_pD3DDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP);
 }
 
-void SetUpStencilMaskRenderState()
+void SetUpStencilMaskRenderState(unsigned char ref, D3DCMPFUNC cmp_func)
 {
 	// ステンシルバッファ設定 => 有効
 	g_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
 
-	// ステンシルバッファへ描き込む参照値設定 => 0x01
-	g_pD3DDevice->SetRenderState(D3DRS_STENCILREF, 0x01);
+	// ステンシルバッファへ描き込む参照値設定
+	g_pD3DDevice->SetRenderState(D3DRS_STENCILREF, ref);
 
 	// マスク設定 => 0xff(全て真)
 	g_pD3DDevice->SetRenderState(D3DRS_STENCILMASK, 0xff);
 
 	// ステンシルテスト比較設定 => 必ず成功する
-	g_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
+	g_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, cmp_func);
 
 	// ステンシルテストのテスト設定
 	g_pD3DDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP );
@@ -122,21 +118,7 @@ void SetUpStencilMaskRenderState()
 	g_pD3DDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_NEVER);
 }
 
-void RenderingStencilMask(const char* file_name, float x, float y)
-{
-	const TEXTURE_DATA* texture_data = g_TextureList[file_name];
-
-	if (texture_data == nullptr)
-	{
-		return;
-	}
-	g_pD3DDevice->SetTexture(0, texture_data->m_pTexture);
-	SetUpStencilMaskRenderState();
-	RenderingRectPorigon(x, y, 0.0f, texture_data->m_Width, texture_data->m_Height, texture_data);
-}
-
-
-void RenderingTexture(const char* file_name, float x, float y, float z)
+void RenderingTexture(const char* file_name, float x, float y, float z, DWORD color)
 {
 	const TEXTURE_DATA* texture_data = g_TextureList[file_name];
 
@@ -147,19 +129,15 @@ void RenderingTexture(const char* file_name, float x, float y, float z)
 	
 	g_pD3DDevice->SetTexture(0, texture_data->m_pTexture);
 
-	SetUpStencilRenderState();
-
-	RenderingRectPorigon(x, y, z, texture_data->m_Width, texture_data->m_Height, texture_data);
+	RenderingRectPorigon(x, y, z, texture_data->m_Width, texture_data->m_Height, texture_data, color);
 }
 
-void RenderingRectPorigon(float x, float y, float z, float width, float height, const TEXTURE_DATA* texture_data)
+void RenderingRectPorigon(float x, float y, float z, float width, float height, const TEXTURE_DATA* texture_data, DWORD color)
 {
 	float left_tu = 0.0f;
 	float right_tu = 1.0f;
 	float top_tv = 0.0f;
 	float bottom_tv = 0.0f;
-
-	DWORD color = D3DCOLOR_ARGB(255, 255, 255, 255);
 
 	// 三角形を描画 start
 	CUSTOM_VERTEX v[4] = 
